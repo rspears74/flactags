@@ -3,99 +3,52 @@
 from mutagen import flac
 import os, subprocess, sys, argparse
 
-def change_album(new_album):
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
+def get_flacs():
+    return sorted(filter(lambda x: x.endswith('flac'), os.listdir('.')))
+
+def print_all_props(f):
+    file_flac = flac.FLAC(f)
+    print(f)
+    for k, v in file_flac.tags.items():
+        print("{}: {}".format(k, v))
+    print()
+
+def print_props_all_files():
+    for f in get_flacs():
+        print_all_props(f)
+
+def change_for_all(param, value):
+    for f in get_flacs():
         file_flac = flac.FLAC(f)
-        file_flac.tags['ALBUM'] = new_album
+        file_flac.tags[param] = value
         file_flac.save()
 
-def change_artist(new_artist):
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
-        file_flac = flac.FLAC(f)
-        file_flac.tags['ARTIST'] = new_artist
-        file_flac.save()
-
-def change_titles():
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
+def change_one_by_one(param):
+    print("Change {}".format(param))
+    print()
+    for f in get_flacs():
         file_flac = flac.FLAC(f)
         try:
-            file_title = file_flac.tags['TITLE'][0]
+            value = file_flac.tags[param][0]
             print()
-            print(f)
-            print(file_title)
-            new_title = input("Edit title? (Press enter to keep existing title) > ")
-            if new_title != '':
-                file_flac.tags['TITLE'] = new_title
+            print_all_props(f)
+            value = input("Edit {}? (Press enter to keep existing) > ".format(param))
+            if value != '':
+                file_flac.tags[param] = value
                 file_flac.save()
         except KeyError:
             print()
-            print(f)
-            print("No 'TITLE' tag found.")
-            new_title = input("Assign a title > ")
-            file_flac.tags['TITLE'] = new_title
+            print_all_props(f)
+            print("No {} tag found.".format(param))
+            value = input("Assign a {} > ".format(param))
+            file_flac.tags[param] = value
             file_flac.save()
 
-def delete_titles():
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
+def delete_param(param):
+    for f in get_flacs():
         file_flac = flac.FLAC(f)
-        del file_flac.tags['TITLE']
+        del file_flac.tags[param]
         file_flac.save()
-
-def track_numbers():
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
-        file_flac = flac.FLAC(f)
-        try:
-            track_num = file_flac.tags['TRACKNUMBER'][0]
-            print()
-            print(f)
-            try:
-                print(file_flac['TITLE'][0])
-            except KeyError:
-                pass
-            print("Track number {}".format(track_num))
-            track_num = input("Edit track number? (Press enter to keep existing) > ")
-            if track_num != '':
-                file_flac.tags['TRACKNUMBER'] = track_num
-                file_flac.save()
-        except KeyError:
-            print()
-            print(f)
-            try:
-                print(file_flac['TITLE'][0])
-            except KeyError:
-                pass
-            print("No 'TRACKNUMBER' tag found.")
-            track_num = input("Assign a track number > ")
-            file_flac.tags['TRACKNUMBER'] = track_num
-            file_flac.save()
-
-def disc_numbers():
-    for f in filter(lambda x: x.endswith('flac'), os.listdir('.')):
-        file_flac = flac.FLAC(f)
-        try:
-            disc_num = file_flac.tags['DISCNUMBER'][0]
-            print()
-            print(f)
-            try:
-                print(file_flac['TITLE'][0])
-            except KeyError:
-                pass
-            print("Disc number {}".format(disc_num))
-            disc_num = input("Edit disc number? (Press enter to keep existing) > ")
-            if disc_num != '':
-                file_flac.tags['DISCNUMBER'] = disc_num
-                file_flac.save()
-        except KeyError:
-            print()
-            print(f)
-            try:
-                print(file_flac['TITLE'][0])
-            except KeyError:
-                pass
-            print("No 'DISCNUMBER' tag found.")
-            disc_num = input("Assign a disc number > ")
-            file_flac.tags['DISCNUMBER'] = disc_num
-            file_flac.save()
 
 parser = argparse.ArgumentParser()
 
@@ -115,18 +68,23 @@ parser.add_argument('--track-num', '-n',
 parser.add_argument('--disc-num', '-N',
     action='store_true',
     help='edit disc numbers')
+parser.add_argument('--print-all', '-p',
+    action='store_true',
+    help='print all tags')
 
 args = parser.parse_args()
 
 if args.artist is not None:
-    change_artist(args.artist)
+    change_for_all('ARTIST', args.artist)
 if args.album is not None:
-    change_album(args.album)
+    change_for_all('ALBUM', args.album)
 if args.del_titles:
-    delete_titles()
+    delete_param('TITLE')
 if args.titles:
-    change_titles()
+    change_one_by_one('TITLE')
 if args.track_num:
-    track_numbers()
+    change_one_by_one('TRACKNUMBER')
 if args.disc_num:
-    disc_numbers()
+    change_one_by_one('DISCNUMBER')
+if args.print_all:
+    print_props_all_files()
