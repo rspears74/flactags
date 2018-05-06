@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from mutagen import flac
 import os, subprocess, sys, argparse
+from mutagen import flac
 
 def get_flacs():
     return sorted(filter(lambda x: x.endswith('flac'), os.listdir('.')))
@@ -47,7 +47,8 @@ def change_one_by_one(param):
 def delete_param(param):
     for f in get_flacs():
         file_flac = flac.FLAC(f)
-        del file_flac.tags[param]
+        if param in file_flac.tags:
+            del file_flac.tags[param]
         file_flac.save()
 
 parser = argparse.ArgumentParser()
@@ -59,7 +60,7 @@ parser.add_argument('--artist', '-r',
 parser.add_argument('--titles', '-t',
     action='store_true',
     help='edit song titles')
-parser.add_argument('--del-titles', '-d',
+parser.add_argument('--del-titles', '-dt',
     action='store_true',
     help='delete all song titles')
 parser.add_argument('--track-num', '-n',
@@ -71,6 +72,11 @@ parser.add_argument('--disc-num', '-N',
 parser.add_argument('--print-all', '-p',
     action='store_true',
     help='print all tags')
+parser.add_argument('--delete', '-d',
+    help='delete a parameter')
+parser.add_argument('--change-all', '-c',
+    nargs=2,
+    help='change a parameter')
 
 args = parser.parse_args()
 
@@ -88,3 +94,7 @@ if args.disc_num:
     change_one_by_one('DISCNUMBER')
 if args.print_all:
     print_props_all_files()
+if args.delete is not None:
+    delete_param(args.delete)
+if args.change_all is not None:
+    change_for_all(*args.change_all)
